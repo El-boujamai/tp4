@@ -7,14 +7,12 @@ pipeline {
     stages {
         stage('Cloning Git') {
             steps {
-                // Utilise votre dépôt GitHub personnel
                 git branch: 'master', url: 'https://github.com/El-boujamai/tp4'
             }
         }
         stage('Building image') {
             steps {
                 script {
-                    // Utilisation de 'def' pour éviter les avertissements Groovy et construction de l'image
                     def customImage = docker.build("${registry}:${env.BUILD_NUMBER}")
                     bat "docker tag ${registry}:${env.BUILD_NUMBER} ${registry}:latest"
                 }
@@ -23,7 +21,6 @@ pipeline {
         stage('Test image') {
             steps {
                 script {
-                    // Étape de test (simulation demandée par le TP)
                     echo "Tests passed successfully"
                 }
             }
@@ -31,11 +28,21 @@ pipeline {
         stage('Publish Image') {
             steps {
                 script {
-                    // Connexion et envoi sur Docker Hub
                     docker.withRegistry('', registryCredential) {
                         bat "docker push ${registry}:${env.BUILD_NUMBER}"
                         bat "docker push ${registry}:latest"
                     }
+                }
+            }
+        }
+        stage('Deploy image') {
+            steps {
+                script {
+                    // Optionnel : s'assurer qu'aucun ancien conteneur du même nom ne bloque le port (si vous en utilisez un)
+                    // bat "docker rm -f mon-app-tp4 || true"
+                    
+                    // Lancement du conteneur en arrière-plan (-d) avec un port mappé (ex: port 8080 ou 80)
+                    bat "docker run -d -p 8080:80 --name tp4-container_${env.BUILD_NUMBER} ${registry}:${env.BUILD_NUMBER}"
                 }
             }
         }
